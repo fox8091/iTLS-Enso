@@ -20,21 +20,21 @@ int sel = 0;
 int i;
 int shode = 0;
 
-int fcp(const char *from, const char *to) {
-	long fsz;
+int f_copy(const char *from, const char *to) {
+	long f_size;
 	FILE *fp = fopen(from,"rb");
 
 	fseek(fp, 0, SEEK_END);
-	fsz = ftell(fp);
+	f_size = ftell(fp);
 	rewind(fp);
 
-	char* fbuf = (char*) malloc(sizeof(char) * fsz);
-	fread(fbuf, sizeof(char), (size_t)fsz, fp);
+	char* f_buffer = (char*) malloc(sizeof(char) * f_size);
+	fread(f_buffer, sizeof(char), (size_t)f_size, fp);
 
 	FILE *pFile = fopen(to, "wb");
 	
-	for (int i = 0; i < fsz; ++i) {
-			fputc(fbuf[i], pFile);
+	for (int i = 0; i < f_size; ++i) {
+			fputc(f_buffer[i], pFile);
 	}
    
 	fclose(fp);
@@ -42,9 +42,9 @@ int fcp(const char *from, const char *to) {
 	return 1;
 }
 
-int ex(const char *fname) {
+int f_exist(const char *fname) {
     FILE *file;
-    if ((file = fopen(fname, "r")))
+    if (file = fopen(fname, "r"))
     {
         fclose(file);
         return 1;
@@ -52,21 +52,22 @@ int ex(const char *fname) {
     return 0;
 }
 
-int frcp(const char *from, const char *to) {
-if (ex(to) == 1) sceIoRemove(to);
-	long fsz;
+int f_overwrite(const char *from, const char *to) {
+	if (f_exist(to)) 
+		sceIoRemove(to);
+	long f_size;
 	FILE *fp = fopen(from,"rb");
 
 	fseek(fp, 0, SEEK_END);
-	fsz = ftell(fp);
+	f_size = ftell(fp);
 	rewind(fp);
 
-	char* fbuf = (char*) malloc(sizeof(char) * fsz);
-	fread(fbuf, sizeof(char), (size_t)fsz, fp);
+	char* f_buffer = (char*) malloc(sizeof(char) * f_size);
+	fread(f_buffer, sizeof(char), (size_t)f_size, fp);
 
 	FILE *pFile = fopen(to, "wb");
 	
-	for (int i = 0; i < fsz; ++i) {
+	for (int i = 0; i < f_size; ++i) {
 			fputc(fbuf[i], pFile);
 	}
    
@@ -81,7 +82,7 @@ void smenu(){
 	psvDebugScreenSetFgColor(COLOR_CYAN);
 	psvDebugScreenPrintf("                       iTLS-Enso v1.5                            \n");
 	psvDebugScreenPrintf("                         By SKGleba                              \n");
-		psvDebugScreenSetFgColor(COLOR_RED);
+	psvDebugScreenSetFgColor(COLOR_RED);
 	for(i = 0; i < optct; i++){
 		if(sel==i){
 			psvDebugScreenSetFgColor(COLOR_GREEN);
@@ -93,19 +94,33 @@ void smenu(){
 	psvDebugScreenSetFgColor(COLOR_GREEN);
 }
 
-int do_shit(){
-if (sel == 3) sceKernelExitProcess(0);
-void *buf = malloc(0x100);
-vshIoUmount(0x300, 0, 0, 0);
-vshIoUmount(0x300, 1, 0, 0);
-_vshIoMount(0x300, 0, 2, buf);
-psvDebugScreenPrintf("Working...\n");
-if (ex("vs0:/data/external/webcore/cpt.o") == 0) fcp("vs0:/data/external/webcore/ScePsp2Compat.suprx", "vs0:/data/external/webcore/cpt.o");
-if (sel == 0) frcp("app0:Media/00", "vs0:/data/external/webcore/ScePsp2Compat.suprx");
-if (sel == 1) frcp("vs0:/data/external/webcore/cpt.o", "vs0:/data/external/webcore/ScePsp2Compat.suprx");
-if (sel == 2) frcp("app0:Media/01", "vs0:/data/external/cert/CA_LIST.cer");
-psvDebugScreenPrintf("Done\n");
-sceKernelDelayThread(1 * 1000 * 1000);sceKernelExitProcess(0);}
+int do_shit()
+{
+	if (sel == 3)
+		sceKernelExitProcess(0);
+	void *buf = malloc(0x100);
+	vshIoUmount(0x300, 0, 0, 0);
+	vshIoUmount(0x300, 1, 0, 0);
+	_vshIoMount(0x300, 0, 2, buf);
+	psvDebugScreenPrintf("Working...\n");
+	if (f_exist("vs0:/data/external/webcore/ScePsp2Compat.bak") == 0)
+		f_copy("vs0:/data/external/webcore/ScePsp2Compat.suprx", "vs0:/data/external/webcore/ScePsp2Compat.bak");
+	switch(sel){
+		case 1:
+			f_overwrite("app0:Media/00", "vs0:/data/external/webcore/ScePsp2Compat.suprx");
+			break;
+		case 2:
+			f_overwrite("vs0:/data/external/webcore/ScePspCompat.bak", "vs0:/data/external/webcore/ScePsp2Compat.suprx");
+			break;
+		case 3:
+			f_overwrite("app0:Media/01", "vs0:/data/external/cert/CA_LIST.cer");
+			break;
+	}
+	psvDebugScreenPrintf("Done\n");
+	sceKernelDelayThread(1 * 1000 * 1000);
+	sceKernelExitProcess(0);
+}
+
 int main()
 {
 	psvDebugScreenInit();
@@ -128,7 +143,7 @@ int main()
 			}
 			
 			if (pad.buttons == SCE_CTRL_UP) {
-				if(sel!=0){
+				if(sel > 0){
 					sel--;
 				}
 				smenu();
@@ -136,7 +151,7 @@ int main()
 			}
 			
 			if (pad.buttons == SCE_CTRL_DOWN) {
-				if(sel+1<optct){
+				if(sel + 1 < optct){
 					sel++;
 				}
 				smenu();
@@ -146,5 +161,5 @@ int main()
 	
 	sceKernelDelayThread(10 * 1000 * 1000);
 	sceKernelExitProcess(0);
-    return 0;
+	return 0;
 }
